@@ -1,0 +1,20 @@
+---
+name: profile-service
+namespace: core-profile
+description: "Profile management service for the core platform"
+dependencies:
+  - "core-events/event-service"
+tags:
+  - go
+  - profile
+  - microservice
+scripts:
+  build: true
+  test: true
+  lint: true
+  tidy: true
+  format: true
+  clean: false  # Disabled for this project
+environment:
+  GO_ENV: "development"
+  SERVICE_NAME: "profile-service"

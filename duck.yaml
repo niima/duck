@@ -1,0 +1,37 @@
+---
+# Duck Monorepo Configuration
+
+# Directory where Duck will scan for applications
+targetDirectory: "./apps"
+
+# Global scripts that can be run on projects
+scripts:
+  build:
+    command: "go build ."
+    description: "Build the Go application"
+    workingDir: "{projectRoot}"
+  
+  test:
+    command: "go test -v ./..."
+    description: "Run tests with verbose output"
+    workingDir: "{projectRoot}"
+  
+  lint:
+    command: "golangci-lint run --fix"
+    description: "Run linter and fix issues"
+    workingDir: "{projectRoot}"
+  
+  tidy:
+    command: "go mod tidy"
+    description: "Clean up go.mod and go.sum"
+    workingDir: "{projectRoot}"
+  
+  clean:
+    command: "go clean -cache"
+    description: "Clean build cache"
+    workingDir: "{projectRoot}"
+  
+  format:
+    command: "go fmt ./..."
+    description: "Format Go code"
+    workingDir: "{projectRoot}"
