@@ -1,0 +1,41 @@
+{
+  "name": "user-api",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/user-service/user-api",
+  "tags": ["api", "go", "backend"],
+  "targets": {
+    "build": {
+      "options": {
+        "command": "go build -o bin/{projectName} ."
+      }
+    },
+    "up": {},
+    "down": {},
+    "start": {
+      "options": {
+        "command": "go run ."
+      }
+    },
+    "stop": {},
+    "go-mod-tidy": {
+      "options": {
+        "command": "go mod tidy"
+      }
+    },
+    "golangci-lint": {
+      "options": {
+        "command": "golangci-lint run --fix"
+      }
+    },
+    "test": {
+      "options": {
+        "command": "go test -v ./..."
+      }
+    },
+    "mockery": {},
+    "swag-fmt": {},
+    "swagger": {} 
+  }
+}
+

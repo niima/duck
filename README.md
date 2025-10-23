@@ -4,12 +4,13 @@ A simple, fast, and dependency-aware build tool for Go monorepos. Duck scans you
 
 ## Features
 
-- 🔍 **Automatic Project Discovery** - Scans directories for `app.yaml` files
-- 📦 **Namespace Organization** - Projects organized by `apps/namespace/app-name` structure
-- 🔗 **Dependency Resolution** - Respects project dependencies and execution order
-- 🏷️ **Tag-based Filtering** - Run scripts on projects with specific tags
-- 🎯 **Flexible Targeting** - Run on all projects, specific namespaces, or individual projects
-- 🚀 **Dry Run Support** - Preview what would be executed
+- **Automatic Project Discovery** - Scans directories for `app.yaml` or `project.json` files
+- **Namespace Organization** - Projects organized by `apps/namespace/app-name` structure
+- **Dependency Resolution** - Respects project dependencies and execution order
+- **Tag-based Filtering** - Run scripts on projects with specific tags
+- **Flexible Targeting** - Run on all projects, specific namespaces, or individual projects
+- **Dry Run Support** - Preview what would be executed
+- **Nx Compatibility** - Full support for Nx monorepo configuration format (lift-and-shift migration)
 
 ## Installation
 
@@ -74,6 +75,139 @@ environment:
 # Run tests on specific namespace
 ./duck run --script test --namespace core
 ```
+
+## Nx Compatibility
+
+Duck supports Nx's `project.json` format, allowing you to use Duck alongside Nx or migrate from Nx without changing your project structure.
+
+### Switching to Nx Format
+
+Switch between Duck's `app.yaml` format and Nx's `project.json` format:
+
+```bash
+# Switch to Nx format
+./duck config format --set nx
+
+# Switch back to Duck format
+./duck config format --set duck
+
+# Check current format
+./duck config format
+```
+
+### Using Nx project.json Files
+
+When using Nx format, Duck automatically:
+
+- Scans for `project.json` files instead of `app.yaml`
+- Converts Nx targets to Duck scripts
+- Respects Nx project structure and dependencies
+- Supports Nx variable substitution (`{projectRoot}`, `{workspaceRoot}`, etc.)
+
+**Example Nx `project.json`:**
+
+```json
+{
+  "name": "domain-configurator-api",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/core-shared/domain-configurator-api",
+  "tags": ["api", "go", "backend"],
+  "targets": {
+    "build": {
+      "executor": "@pangaea/nix:develop",
+      "options": {
+        "command": "go build -o bin/{projectName} ."
+      }
+    },
+    "test": {
+      "executor": "@pangaea/nix:develop",
+      "options": {
+        "command": "go test -v ./..."
+      }
+    },
+    "lint": {
+      "executor": "@pangaea/nix:develop",
+      "options": {
+        "command": "golangci-lint run --fix"
+      }
+    },
+    "seed-test-data": {
+      "executor": "@pangaea/nix:develop",
+      "options": {
+        "command": "cd {projectRoot}/scripts/seed_test_data && go run seed_test_data.go"
+      }
+    }
+  }
+}
+```
+
+### Duck Configuration for Nx
+
+Update your `duck.yaml` to use Nx format:
+
+```yaml
+---
+# Duck Monorepo Configuration
+targetDirectory: "./apps"
+
+# Set format to 'nx' to use project.json files
+projectConfigFormat: "nx"
+
+# Scripts are automatically discovered from Nx targets
+# You can optionally override them here
+scripts:
+  build:
+    command: "go build ."
+    description: "Build the Go application"
+    workingDir: "{projectRoot}"
+```
+
+### Using Duck with Nx
+
+Once configured for Nx format, use Duck commands as normal:
+
+```bash
+# List all Nx projects
+./duck list
+
+# Run Nx targets using Duck
+./duck run --script build --all
+./duck run --script test --namespace core-shared
+./duck run --script seed-test-data --project core-shared/domain-configurator-api
+
+# List all available Nx targets
+./duck scripts
+```
+
+### Migration Guide: Nx to Duck
+
+Duck makes it easy to migrate from Nx or use both tools simultaneously:
+
+1. **Keep using Nx format:**
+
+   ```bash
+   ./duck config format --set nx
+   ```
+
+2. **Or gradually migrate to Duck format:**
+
+   - Set format to `duck`
+   - Create `app.yaml` files alongside `project.json`
+   - Duck will use the simpler YAML format
+
+3. **Use both tools:**
+   - Keep `project.json` files for Nx
+   - Set Duck to Nx format
+   - Use Duck for build orchestration, Nx for other features
+
+### Benefits of Using Duck with Nx
+
+- **Simpler CLI**: Lighter weight alternative to Nx CLI
+- **Faster startup**: No Node.js dependency for simple operations
+- **Familiar commands**: Similar to Nx but with Duck's simplicity
+- **No lock-in**: Switch between formats anytime
+- **Lift-and-shift**: Use existing Nx projects without modification
 
 ## Commands
 
@@ -390,3 +524,17 @@ MIT License - see LICENSE file for details.
 5. Submit a pull request
 
 ---
+
+## Roadmap
+
+- [x] Initial release
+- [x] Service discovery feature
+- [x] Run commands against services
+- [x] Nx config format compatibility
+- [ ] Auto generate dependency graph
+- [ ] Build only dependent services
+- [ ] support for shared packages
+- [ ] Build only changed services
+- [ ] Golang build support
+- [ ] Javascript build support
+- [ ] Support for docker remote cache (artifact registry)

@@ -4,6 +4,11 @@
 # Directory where Duck will scan for applications
 targetDirectory: "./apps"
 
+# Project configuration format: "duck" or "nx"
+# - duck: uses app.yaml files
+# - nx: uses project.json files (compatible with Nx monorepo)
+projectConfigFormat: "all"
+
 # Global scripts that can be run on projects
 scripts:
   build:

@@ -15,7 +15,6 @@ import (
 	"duck/internal/config"
 )
 
-// ExecutionResult represents the result of executing a script
 type ExecutionResult struct {
 	ProjectKey string
 	Script     string
@@ -25,13 +24,11 @@ type ExecutionResult struct {
 	Duration   time.Duration
 }
 
-// Executor handles script execution across projects
 type Executor struct {
 	projectConfig *config.ProjectConfig
 	projects      map[string]*config.AppProject
 }
 
-// New creates a new executor instance
 func New(projectConfig *config.ProjectConfig, projects map[string]*config.AppProject) *Executor {
 	return &Executor{
 		projectConfig: projectConfig,
@@ -39,7 +36,6 @@ func New(projectConfig *config.ProjectConfig, projects map[string]*config.AppPro
 	}
 }
 
-// ExecuteScript runs a script on a specific project
 func (e *Executor) ExecuteScript(ctx context.Context, projectKey, scriptName string) (*ExecutionResult, error) {
 	project, exists := e.projects[projectKey]
 	if !exists {
@@ -51,7 +47,6 @@ func (e *Executor) ExecuteScript(ctx context.Context, projectKey, scriptName str
 		return nil, fmt.Errorf("script %s not found", scriptName)
 	}
 
-	// Check if script is enabled for this project
 	if enabled, exists := project.Config.Scripts[scriptName]; exists && !enabled {
 		return &ExecutionResult{
 			ProjectKey: projectKey,
@@ -71,10 +66,8 @@ func (e *Executor) ExecuteScript(ctx context.Context, projectKey, scriptName str
 		result.Duration = time.Since(start)
 	}()
 
-	// Determine working directory
 	workingDir := project.Path
 	if script.WorkingDir != "" {
-		// Replace variables in working directory first
 		expandedWorkingDir := e.replaceVariables(script.WorkingDir, project, project.Path)
 
 		if filepath.IsAbs(expandedWorkingDir) {
@@ -84,14 +77,11 @@ func (e *Executor) ExecuteScript(ctx context.Context, projectKey, scriptName str
 		}
 	}
 
-	// Replace variables in command
 	command := e.replaceVariables(script.Command, project, workingDir)
 
-	// Prepare command
 	cmd := exec.CommandContext(ctx, "sh", "-c", command)
 	cmd.Dir = workingDir
 
-	// Set environment variables
 	cmd.Env = os.Environ()
 	for key, value := range script.Environment {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
@@ -100,7 +90,6 @@ func (e *Executor) ExecuteScript(ctx context.Context, projectKey, scriptName str
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
 	}
 
-	// Capture output
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		result.Error = fmt.Sprintf("failed to create stdout pipe: %v", err)
@@ -118,7 +107,6 @@ func (e *Executor) ExecuteScript(ctx context.Context, projectKey, scriptName str
 		return result, nil
 	}
 
-	// Read output
 	var outputBuilder, errorBuilder strings.Builder
 	var wg sync.WaitGroup
 
@@ -135,7 +123,6 @@ func (e *Executor) ExecuteScript(ctx context.Context, projectKey, scriptName str
 
 	wg.Wait()
 
-	// Wait for command to complete
 	if err := cmd.Wait(); err != nil {
 		result.Success = false
 		result.Error = errorBuilder.String()
@@ -154,7 +141,6 @@ func (e *Executor) ExecuteScript(ctx context.Context, projectKey, scriptName str
 	return result, nil
 }
 
-// ExecuteScriptOnProjects runs a script on multiple projects in order
 func (e *Executor) ExecuteScriptOnProjects(ctx context.Context, projectKeys []string, scriptName string) ([]*ExecutionResult, error) {
 	var results []*ExecutionResult
 
@@ -171,7 +157,6 @@ func (e *Executor) ExecuteScriptOnProjects(ctx context.Context, projectKeys []st
 		}
 		results = append(results, result)
 
-		// Stop on first failure if desired (could be configurable)
 		if !result.Success {
 			break
 		}
@@ -180,7 +165,6 @@ func (e *Executor) ExecuteScriptOnProjects(ctx context.Context, projectKeys []st
 	return results, nil
 }
 
-// replaceVariables replaces template variables in command strings
 func (e *Executor) replaceVariables(command string, project *config.AppProject, workingDir string) string {
 	replacements := map[string]string{
 		"{projectRoot}": project.Path,
@@ -197,7 +181,6 @@ func (e *Executor) replaceVariables(command string, project *config.AppProject, 
 	return result
 }
 
-// copyOutput copies data from reader to writer
 func copyOutput(reader io.Reader, writer io.Writer) {
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {

@@ -8,13 +8,20 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ProjectConfig represents the project.yaml configuration
+type ProjectConfigFormat string
+
+const (
+	FormatDuck ProjectConfigFormat = "duck"
+	FormatNx   ProjectConfigFormat = "nx"
+	FormatAll  ProjectConfigFormat = "all"
+)
+
 type ProjectConfig struct {
-	TargetDirectory string            `yaml:"targetDirectory"`
-	Scripts         map[string]Script `yaml:"scripts"`
+	TargetDirectory     string              `yaml:"targetDirectory"`
+	ProjectConfigFormat ProjectConfigFormat `yaml:"projectConfigFormat"`
+	Scripts             map[string]Script   `yaml:"scripts"`
 }
 
-// Script represents a script command that can be run
 type Script struct {
 	Command     string            `yaml:"command"`
 	Description string            `yaml:"description"`
@@ -22,7 +29,6 @@ type Script struct {
 	Environment map[string]string `yaml:"environment,omitempty"`
 }
 
-// LoadProjectConfig loads and parses the project.yaml file
 func LoadProjectConfig(path string) (*ProjectConfig, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -34,18 +40,41 @@ func LoadProjectConfig(path string) (*ProjectConfig, error) {
 		return nil, fmt.Errorf("failed to parse project config: %w", err)
 	}
 
-	// Set default target directory if not specified
 	if config.TargetDirectory == "" {
 		config.TargetDirectory = "./apps"
 	}
 
-	// Convert to absolute path
+	if config.ProjectConfigFormat == "" {
+		config.ProjectConfigFormat = FormatDuck
+	}
+
+	if config.ProjectConfigFormat != FormatDuck && config.ProjectConfigFormat != FormatNx && config.ProjectConfigFormat != FormatAll {
+		return nil, fmt.Errorf("invalid projectConfigFormat: must be 'duck', 'nx', or 'all', got '%s'", config.ProjectConfigFormat)
+	}
+
 	if !filepath.IsAbs(config.TargetDirectory) {
 		absPath, err := filepath.Abs(config.TargetDirectory)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get absolute path for target directory: %w", err)
 		}
 		config.TargetDirectory = absPath
+	}
+
+	if config.ProjectConfigFormat == FormatNx || config.ProjectConfigFormat == FormatAll {
+		nxScripts, err := ScanNxTargets(config.TargetDirectory)
+		if err != nil {
+			fmt.Printf("Warning: Failed to scan Nx targets: %v\n", err)
+		} else {
+			if len(config.Scripts) == 0 {
+				config.Scripts = nxScripts
+			} else {
+				for targetName, targetScript := range nxScripts {
+					if _, exists := config.Scripts[targetName]; !exists {
+						config.Scripts[targetName] = targetScript
+					}
+				}
+			}
+		}
 	}
 
 	return &config, nil

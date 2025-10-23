@@ -13,14 +13,12 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// ListProjects implements the list command
 func ListProjects(c *cli.Context) error {
 	_, projects, err := LoadProjectData()
 	if err != nil {
 		return err
 	}
 
-	// Apply filters
 	filtered := FilterProjects(projects, FilterOptions{
 		Namespace: c.String("namespace"),
 		Tags:      c.StringSlice("tag"),
@@ -31,10 +29,9 @@ func ListProjects(c *cli.Context) error {
 		return nil
 	}
 
-	// Organize by namespace
 	organized := OrganizeByNamespace(filtered)
 
-	// Sort namespaces for consistent output
+	// Sort for consistent output
 	var namespaces []string
 	for ns := range organized {
 		namespaces = append(namespaces, ns)
@@ -47,7 +44,6 @@ func ListProjects(c *cli.Context) error {
 		fmt.Printf("📁 %s\n", namespace)
 
 		projects := organized[namespace]
-		// Sort projects within namespace
 		sort.Slice(projects, func(i, j int) bool {
 			return projects[i].Config.Name < projects[j].Config.Name
 		})
@@ -74,7 +70,6 @@ func ListProjects(c *cli.Context) error {
 	return nil
 }
 
-// RunScript implements the run command
 func RunScript(c *cli.Context) error {
 	projectConfig, projects, err := LoadProjectData()
 	if err != nil {
@@ -86,11 +81,9 @@ func RunScript(c *cli.Context) error {
 		return fmt.Errorf("script '%s' not found", scriptName)
 	}
 
-	// Determine which projects to run on
 	var targetProjects []string
 
 	if c.Bool("all") {
-		// Resolve execution order for all projects
 		resolver := resolver.New(projects)
 		resolution, err := resolver.ResolveExecutionOrder()
 		if err != nil {
@@ -98,7 +91,6 @@ func RunScript(c *cli.Context) error {
 		}
 		targetProjects = resolution.ExecutionOrder
 	} else if projectNames := c.StringSlice("project"); len(projectNames) > 0 {
-		// Specific projects
 		for _, name := range projectNames {
 			if _, exists := projects[name]; !exists {
 				return fmt.Errorf("project '%s' not found", name)
@@ -106,7 +98,6 @@ func RunScript(c *cli.Context) error {
 			targetProjects = append(targetProjects, name)
 		}
 	} else if namespace := c.String("namespace"); namespace != "" {
-		// All projects in namespace
 		for key, project := range projects {
 			if project.Config.Namespace == namespace {
 				targetProjects = append(targetProjects, key)
@@ -114,7 +105,6 @@ func RunScript(c *cli.Context) error {
 		}
 		sort.Strings(targetProjects)
 	} else if tags := c.StringSlice("tag"); len(tags) > 0 {
-		// Projects with specific tags
 		filtered := FilterProjects(projects, FilterOptions{Tags: tags})
 		for key := range filtered {
 			targetProjects = append(targetProjects, key)
@@ -138,7 +128,6 @@ func RunScript(c *cli.Context) error {
 		return nil
 	}
 
-	// Execute the script
 	executor := executor.New(projectConfig, projects)
 	ctx := context.Background()
 
@@ -192,7 +181,6 @@ func RunScript(c *cli.Context) error {
 	return nil
 }
 
-// ListScripts implements the scripts command
 func ListScripts(c *cli.Context) error {
 	projectConfig, _, err := LoadProjectData()
 	if err != nil {
@@ -217,6 +205,55 @@ func ListScripts(c *cli.Context) error {
 		if c.Bool("verbose") {
 			fmt.Printf("    Command: %s\n", script.Command)
 		}
+	}
+
+	return nil
+}
+
+func ConfigFormat(c *cli.Context) error {
+	configPath := "duck.yaml"
+
+	setFormat := c.String("set")
+
+	if setFormat != "" {
+		if setFormat != "duck" && setFormat != "nx" && setFormat != "all" {
+			return fmt.Errorf("invalid format: must be 'duck', 'nx', or 'all'")
+		}
+
+		if err := UpdateProjectConfigFormat(configPath, setFormat); err != nil {
+			return fmt.Errorf("failed to update config format: %w", err)
+		}
+
+		fmt.Printf("✅ Project configuration format updated to '%s'\n", setFormat)
+
+		if setFormat == "nx" {
+			fmt.Println("\n📝 Note: Duck will now look for 'project.json' files instead of 'app.yaml'")
+			fmt.Println("   All Nx targets will be automatically available as scripts")
+		} else if setFormat == "all" {
+			fmt.Println("\n📝 Note: Duck will now look for both 'app.yaml' AND 'project.json' files")
+			fmt.Println("   If both exist in the same directory, 'app.yaml' takes precedence")
+			fmt.Println("   All Nx targets will be automatically available as scripts")
+		} else {
+			fmt.Println("\n📝 Note: Duck will now look for 'app.yaml' files")
+		}
+
+		return nil
+	}
+
+	projectConfig, err := LoadProjectConfig(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	fmt.Printf("Current project configuration format: %s\n", projectConfig.ProjectConfigFormat)
+
+	if projectConfig.ProjectConfigFormat == "duck" {
+		fmt.Println("Using Duck's app.yaml format")
+	} else if projectConfig.ProjectConfigFormat == "nx" {
+		fmt.Println("Using Nx's project.json format")
+	} else if projectConfig.ProjectConfigFormat == "all" {
+		fmt.Println("Using both Duck's app.yaml and Nx's project.json formats")
+		fmt.Println("(app.yaml takes precedence when both exist in same directory)")
 	}
 
 	return nil

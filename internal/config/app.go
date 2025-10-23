@@ -8,7 +8,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// AppConfig represents the app.yaml configuration for individual applications
 type AppConfig struct {
 	Name         string            `yaml:"name"`
 	Namespace    string            `yaml:"namespace"`
@@ -19,13 +18,11 @@ type AppConfig struct {
 	Environment  map[string]string `yaml:"environment,omitempty"`
 }
 
-// AppProject represents a discovered application project
 type AppProject struct {
 	Config *AppConfig
-	Path   string // Full path to the project directory
+	Path   string
 }
 
-// LoadAppConfig loads and parses an app.yaml file
 func LoadAppConfig(path string) (*AppConfig, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -37,12 +34,10 @@ func LoadAppConfig(path string) (*AppConfig, error) {
 		return nil, fmt.Errorf("failed to parse app config: %w", err)
 	}
 
-	// Validate required fields
 	if config.Name == "" {
 		return nil, fmt.Errorf("app name is required")
 	}
 
-	// Extract namespace from directory structure if not specified
 	if config.Namespace == "" {
 		dir := filepath.Dir(path)
 		parentDir := filepath.Dir(dir)

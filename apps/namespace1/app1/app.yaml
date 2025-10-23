@@ -13,7 +13,7 @@ scripts:
   lint: true
   tidy: true
   format: true
-  clean: false  # Disabled for this project
+  # clean: false  # Disabled for this project
 environment:
   GO_ENV: "development"
   SERVICE_NAME: "event-service"

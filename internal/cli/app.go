@@ -4,7 +4,6 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// CreateApp creates and configures the CLI application
 func CreateApp() *cli.App {
 	return &cli.App{
 		Name:  "duck",
@@ -97,6 +96,24 @@ func CreateApp() *cli.App {
 					},
 				},
 				Action: ListScripts,
+			},
+			{
+				Name:  "config",
+				Usage: "Manage Duck configuration",
+				Subcommands: []*cli.Command{
+					{
+						Name:  "format",
+						Usage: "Get or set the project configuration format",
+						Flags: []cli.Flag{
+							&cli.StringFlag{
+								Name:    "set",
+								Aliases: []string{"s"},
+								Usage:   "Set format to 'duck' or 'nx'",
+							},
+						},
+						Action: ConfigFormat,
+					},
+				},
 			},
 		},
 	}
