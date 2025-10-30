@@ -1,19 +1,21 @@
----
-name: event-service
-namespace: core-events
-description: "Event handling service for the core platform"
-dependencies: []
-tags:
-  - go
-  - events
-  - microservice
-scripts:
-  build: true
-  test: true
-  lint: true
-  tidy: true
-  format: true
-  # clean: false  # Disabled for this project
+
+description: Event handling service for the core platform
 environment:
-  GO_ENV: "development"
-  SERVICE_NAME: "event-service"
+    GO_ENV: development
+    SERVICE_NAME: event-service
+name: event-service
+namespace: namespace1
+scripts:
+    build: true
+    format: true
+    lint: true
+    test: true
+    tidy: true
+tags:
+    - go
+    - namespace1
+    - microservice
+
+dependencies:
+  - "packages/go/common"
+  - "packages/go/httputils"

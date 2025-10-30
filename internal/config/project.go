@@ -17,9 +17,10 @@ const (
 )
 
 type ProjectConfig struct {
-	TargetDirectory     string              `yaml:"targetDirectory"`
-	ProjectConfigFormat ProjectConfigFormat `yaml:"projectConfigFormat"`
-	Scripts             map[string]Script   `yaml:"scripts"`
+	TargetDirectory       string              `yaml:"targetDirectory"`
+	AdditionalDirectories []string            `yaml:"additionalDirectories,omitempty"`
+	ProjectConfigFormat   ProjectConfigFormat `yaml:"projectConfigFormat"`
+	Scripts               map[string]Script   `yaml:"scripts"`
 }
 
 type Script struct {
@@ -41,7 +42,9 @@ func LoadProjectConfig(path string) (*ProjectConfig, error) {
 	}
 
 	if config.TargetDirectory == "" {
-		config.TargetDirectory = "./apps"
+		// Default to current directory if not specified
+		// Users must explicitly configure targetDirectory in duck.yaml for non-standard layouts
+		config.TargetDirectory = "."
 	}
 
 	if config.ProjectConfigFormat == "" {
@@ -58,6 +61,17 @@ func LoadProjectConfig(path string) (*ProjectConfig, error) {
 			return nil, fmt.Errorf("failed to get absolute path for target directory: %w", err)
 		}
 		config.TargetDirectory = absPath
+	}
+
+	// Convert additional directories to absolute paths
+	for i, dir := range config.AdditionalDirectories {
+		if !filepath.IsAbs(dir) {
+			absPath, err := filepath.Abs(dir)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get absolute path for additional directory %s: %w", dir, err)
+			}
+			config.AdditionalDirectories[i] = absPath
+		}
 	}
 
 	if config.ProjectConfigFormat == FormatNx || config.ProjectConfigFormat == FormatAll {

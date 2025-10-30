@@ -1,20 +1,21 @@
----
 name: profile-service
-namespace: core-profile
-description: "Profile management service for the core platform"
-dependencies:
-  - "core-events/event-service"
-tags:
-  - go
-  - profile
-  - microservice
-scripts:
-  build: true
-  test: true
-  lint: true
-  tidy: true
-  format: true
-  clean: false  # Disabled for this project
+namespace: namespace2
+description: Profile management service for the core platform
 environment:
-  GO_ENV: "development"
-  SERVICE_NAME: "profile-service"
+    GO_ENV: development
+    SERVICE_NAME: profile-service
+
+scripts:
+    build: true
+    clean: false
+    format: true
+    lint: true
+    test: true
+    tidy: true
+tags:
+    - go
+    - namespace2
+    - microservice
+ 
+dependencies:
+  - "packages/go/common"

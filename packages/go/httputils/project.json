@@ -1,0 +1,37 @@
+{
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "implicitDependencies": [
+    "packages/go/common"
+  ],
+  "name": "httputils",
+  "projectType": "library",
+  "sourceRoot": "httputils",
+  "tags": [
+    "go",
+    "shared",
+    "library",
+    "http"
+  ],
+  "targets": {
+    "build": {
+      "options": {
+        "command": "go build ."
+      }
+    },
+    "go-mod-tidy": {
+      "options": {
+        "command": "go mod tidy"
+      }
+    },
+    "golangci-lint": {
+      "options": {
+        "command": "golangci-lint run --fix"
+      }
+    },
+    "test": {
+      "options": {
+        "command": "go test -v ./..."
+      }
+    }
+  }
+}

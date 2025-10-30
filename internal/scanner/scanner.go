@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"duck/internal/config"
 )
@@ -12,6 +11,7 @@ import (
 type Scanner struct {
 	projectConfig *config.ProjectConfig
 	projects      map[string]*config.AppProject
+	workspaceRoot string // Cache the workspace root to avoid repeated os.Getwd() calls
 }
 
 func New(projectConfig *config.ProjectConfig) *Scanner {
@@ -22,6 +22,13 @@ func New(projectConfig *config.ProjectConfig) *Scanner {
 }
 
 func (s *Scanner) ScanProjects() error {
+	// Get workspace root once for performance
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %w", err)
+	}
+	s.workspaceRoot = cwd
+
 	targetDir := s.projectConfig.TargetDirectory
 
 	var scanAll bool
@@ -39,6 +46,22 @@ func (s *Scanner) ScanProjects() error {
 		return fmt.Errorf("unsupported project config format: %s", s.projectConfig.ProjectConfigFormat)
 	}
 
+	// Scan target directory
+	if err := s.scanDirectory(targetDir, configFileNames, scanAll); err != nil {
+		return err
+	}
+
+	// Scan additional directories
+	for _, additionalDir := range s.projectConfig.AdditionalDirectories {
+		if err := s.scanDirectory(additionalDir, configFileNames, scanAll); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Scanner) scanDirectory(targetDir string, configFileNames []string, scanAll bool) error {
 	return filepath.Walk(targetDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			if os.IsPermission(err) {
@@ -84,7 +107,15 @@ func (s *Scanner) ScanProjects() error {
 					return nil
 				}
 
-				projectKey := fmt.Sprintf("%s/%s", appConfig.Namespace, appConfig.Name)
+				// Use relative path from workspace root as project key for consistency
+				// Use cached workspace root for performance
+				relPath, err := filepath.Rel(s.workspaceRoot, projectDir)
+				if err != nil {
+					// Fallback to namespace/name if relative path fails
+					relPath = fmt.Sprintf("%s/%s", appConfig.Namespace, appConfig.Name)
+				}
+
+				projectKey := relPath
 
 				s.projects[projectKey] = &config.AppProject{
 					Config: appConfig,
@@ -111,8 +142,9 @@ func (s *Scanner) GetProject(key string) (*config.AppProject, bool) {
 func (s *Scanner) GetProjectsByNamespace(namespace string) []*config.AppProject {
 	var projects []*config.AppProject
 
-	for key, project := range s.projects {
-		if strings.HasPrefix(key, namespace+"/") {
+	for _, project := range s.projects {
+		// Match by namespace field in config, not by key anymore
+		if project.Config.Namespace == namespace {
 			projects = append(projects, project)
 		}
 	}

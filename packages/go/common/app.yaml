@@ -1,0 +1,16 @@
+---
+name: common
+namespace: shared
+description: "Common utilities and logger for all services"
+dependencies: []
+tags:
+  - go
+  - shared
+  - library
+scripts:
+  build: true
+  test: true
+  lint: true
+  tidy: true
+  format: true
+

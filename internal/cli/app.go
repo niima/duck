@@ -115,6 +115,33 @@ func CreateApp() *cli.App {
 					},
 				},
 			},
+			{
+				Name:    "deps",
+				Aliases: []string{"dependencies"},
+				Usage:   "Analyze project dependencies",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "workspace",
+						Aliases: []string{"w"},
+						Usage:   "Workspace root directory",
+						Value:   ".",
+					},
+					&cli.BoolFlag{
+						Name:    "verbose",
+						Aliases: []string{"v"},
+						Usage:   "Show detailed dependency information including import paths",
+					},
+					&cli.BoolFlag{
+						Name:  "show-indirect",
+						Usage: "Show indirect dependencies",
+					},
+					&cli.BoolFlag{
+						Name:  "sync",
+						Usage: "Sync discovered dependencies to app.yaml/project.json files",
+					},
+				},
+				Action: AnalyzeDependencies,
+			},
 		},
 	}
 }

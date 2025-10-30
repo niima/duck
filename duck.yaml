@@ -4,6 +4,10 @@
 # Directory where Duck will scan for applications
 targetDirectory: "./apps"
 
+# Additional directories to scan for shared libraries/packages
+additionalDirectories:
+  - "./packages"
+
 # Project configuration format: "duck" or "nx"
 # - duck: uses app.yaml files
 # - nx: uses project.json files (compatible with Nx monorepo)

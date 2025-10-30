@@ -1,0 +1,16 @@
+dependencies:
+  - "packages/go/common"
+description: HTTP client and response utilities
+name: httputils
+namespace: shared
+scripts:
+    build: true
+    format: true
+    lint: true
+    test: true
+    tidy: true
+tags:
+    - go
+    - shared
+    - library
+    - http
