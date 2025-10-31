@@ -414,7 +414,13 @@ func AnalyzeDependencies(c *cli.Context) error {
 					marker = "⇢"
 				}
 
-				fmt.Printf("     %s %s", marker, dep.Target)
+				// Map module name to project path for display
+				projectPath := mapGoModuleToProjectKey(dep.Target, allProjects)
+				if projectPath == "" {
+					projectPath = dep.Target // Fallback to module name if mapping fails
+				}
+
+				fmt.Printf("     %s %s", marker, projectPath)
 				if dep.Version != "" {
 					fmt.Printf(" (%s)", dep.Version)
 				}
@@ -438,16 +444,47 @@ func AnalyzeDependencies(c *cli.Context) error {
 	fmt.Println("Dependency Summary:")
 	fmt.Println()
 
+	// Build a map of project paths to their dependents (also as project paths)
+	projectPathToDependents := make(map[string][]string)
+
 	// Show which projects depend on which packages (only internal)
 	for pkg := range localPackages {
 		dependents := builder.FindProjectDependencies(graph, pkg)
 		if len(dependents) > 0 {
-			fmt.Printf("  %s is used by:\n", pkg)
-			for _, dep := range dependents {
-				fmt.Printf("    • %s\n", dep)
+			// Map module name to project path
+			pkgPath := mapGoModuleToProjectKey(pkg, allProjects)
+			if pkgPath == "" {
+				pkgPath = pkg // Fallback
 			}
-			fmt.Println()
+
+			// Map dependent module names to project paths too
+			var mappedDependents []string
+			for _, dep := range dependents {
+				// dep might be a module name or project path, try to map it
+				depPath := dep // dep is the project path from graph (already relative)
+				mappedDependents = append(mappedDependents, depPath)
+			}
+
+			if len(mappedDependents) > 0 {
+				projectPathToDependents[pkgPath] = mappedDependents
+			}
 		}
+	}
+
+	// Sort and display
+	var sortedPaths []string
+	for path := range projectPathToDependents {
+		sortedPaths = append(sortedPaths, path)
+	}
+	sort.Strings(sortedPaths)
+
+	for _, pkgPath := range sortedPaths {
+		dependents := projectPathToDependents[pkgPath]
+		fmt.Printf("  %s is used by:\n", pkgPath)
+		for _, dep := range dependents {
+			fmt.Printf("    • %s\n", dep)
+		}
+		fmt.Println()
 	}
 
 	// Sync dependencies if flag is set
