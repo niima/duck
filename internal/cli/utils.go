@@ -118,3 +118,22 @@ func UpdateProjectConfigFormat(configPath string, format string) error {
 
 	return nil
 }
+
+// ResolveProjectKey resolves a project name or key to the actual project key
+// This allows users to reference projects by their name (e.g., "sending-api")
+// or by their path (e.g., "core-event/sending-api")
+func ResolveProjectKey(projectIdentifier string, projects map[string]*config.AppProject) (string, bool) {
+	// First, check if it's a direct key match (path-based)
+	if _, exists := projects[projectIdentifier]; exists {
+		return projectIdentifier, true
+	}
+
+	// If not found, try to find by project name
+	for key, project := range projects {
+		if project.Config.Name == projectIdentifier {
+			return key, true
+		}
+	}
+
+	return "", false
+}

@@ -54,7 +54,21 @@ func ListProjects(c *cli.Context) error {
 		})
 
 		for _, project := range projects {
-			fmt.Printf("  🦆 %s\n", project.Config.Name)
+			// Find the project key for this project
+			var projectKey string
+			for key, p := range filtered {
+				if p == project {
+					projectKey = key
+					break
+				}
+			}
+
+			fmt.Printf("  🦆 %s", project.Config.Name)
+			// Show path in parentheses if it differs from name
+			if projectKey != "" && projectKey != project.Config.Name {
+				fmt.Printf(" (%s)", projectKey)
+			}
+			fmt.Println()
 
 			if verbose {
 				if project.Config.Description != "" {
@@ -97,10 +111,12 @@ func RunScript(c *cli.Context) error {
 		targetProjects = resolution.ExecutionOrder
 	} else if projectNames := c.StringSlice("project"); len(projectNames) > 0 {
 		for _, name := range projectNames {
-			if _, exists := projects[name]; !exists {
+			// Resolve project name or key to actual project key
+			projectKey, exists := ResolveProjectKey(name, projects)
+			if !exists {
 				return fmt.Errorf("project '%s' not found", name)
 			}
-			targetProjects = append(targetProjects, name)
+			targetProjects = append(targetProjects, projectKey)
 		}
 	} else if namespace := c.String("namespace"); namespace != "" {
 		for key, project := range projects {
